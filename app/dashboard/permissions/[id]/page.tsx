@@ -1,0 +1,354 @@
+// app/dashboard/permissions/[id]/page.tsx
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { apiService } from '@/lib/api';
+import { Permission } from '@/types';
+import { toast } from 'react-hot-toast';
+import { formatDate } from '@/lib/utils';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import {
+  ArrowLeftIcon,
+  PencilIcon,
+  KeyIcon,
+  CalendarIcon,
+  TagIcon,
+  ShieldCheckIcon,
+} from '@heroicons/react/24/outline';
+
+export default function PermissionDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const [permission, setPermission] = useState<Permission | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const permissionId = params.id as string;
+
+  useEffect(() => {
+    if (permissionId) {
+      loadPermission();
+    }
+  }, [permissionId]);
+
+  const loadPermission = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getPermission(permissionId);
+      setPermission(response);
+    } catch (error: any) {
+      console.error('Error loading permission:', error);
+      toast.error('Lỗi khi tải thông tin quyền hạn');
+      if (error?.response?.status === 404) {
+        router.push('/dashboard/permissions');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getResourceColor = (resource: string) => {
+    const colors: Record<string, string> = {
+      'user': 'bg-blue-100 text-blue-800 border-blue-200',
+      'role': 'bg-green-100 text-green-800 border-green-200',
+      'permission': 'bg-purple-100 text-purple-800 border-purple-200',
+      'card': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'meeting': 'bg-pink-100 text-pink-800 border-pink-200',
+      'department': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    };
+    return colors[resource.toLowerCase()] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const getActionColor = (action: string) => {
+    const colors: Record<string, string> = {
+      'create': 'bg-green-100 text-green-800 border-green-200',
+      'read': 'bg-blue-100 text-blue-800 border-blue-200',
+      'update': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'delete': 'bg-red-100 text-red-800 border-red-200',
+      'viewAll': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      'viewOne': 'bg-cyan-100 text-cyan-800 border-cyan-200',
+      'viewOfMe': 'bg-teal-100 text-teal-800 border-teal-200',
+    };
+    return colors[action] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  if (loading) {
+    return (
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-4">
+                <div className="h-32 bg-gray-200 rounded-lg"></div>
+                <div className="h-48 bg-gray-200 rounded-lg"></div>
+              </div>
+              <div className="h-64 bg-gray-200 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!permission) {
+    return (
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center py-12">
+          <KeyIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Không tìm thấy quyền hạn</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Quyền hạn có ID {permissionId.substring(0, 8)}... không tồn tại hoặc đã bị xóa.
+          </p>
+          <div className="mt-6">
+            <Link
+              href="/dashboard/permissions"
+              className="btn-primary"
+            >
+              <ArrowLeftIcon className="h-4 w-4 mr-2" />
+              Quay lại danh sách
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="md:flex md:items-center md:justify-between mb-6">
+          <div className="flex-1 min-w-0">
+            <nav className="flex mb-4" aria-label="Breadcrumb">
+              <ol className="flex items-center space-x-2">
+                <li>
+                  <Link href="/dashboard/permissions" className="text-gray-400 hover:text-gray-500">
+                    <ArrowLeftIcon className="h-5 w-5" />
+                  </Link>
+                </li>
+                <li>
+                  <div className="flex items-center">
+                    <span className="text-gray-400 mx-2">/</span>
+                    <span className="text-sm font-medium text-gray-500">Chi tiết quyền hạn</span>
+                  </div>
+                </li>
+              </ol>
+            </nav>
+
+            <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate py-3">
+              {permission.name}
+            </h2>
+            {/* <p className="mt-1 text-sm text-gray-500">
+              ID: {permission.id.substring(0, 8)}... • Tạo: {formatDate(permission.createdAt)} • Cập nhật: {formatDate(permission.updatedAt)}
+            </p> */}
+          </div>
+
+          <div className="mt-4 flex space-x-3 md:mt-0 md:ml-4">
+            <Link
+              href={`/dashboard/permissions/${permission.id}/edit`}
+              className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <PencilIcon className="h-4 w-4 mr-2" />
+              Chỉnh sửa
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Information */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Permission Overview */}
+            <div className="bg-white shadow rounded-lg border border-gray-300">
+              <div className="px-4 py-3 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <KeyIcon className="h-5 w-5 mr-2" />
+                  Thông tin quyền hạn
+                </h3>
+              </div>
+              <div className="px-4 py-4">
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="w-24 h-24 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <KeyIcon className="h-12 w-12 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {permission.name}
+                    </h3>
+                    <div className="flex items-center justify-center space-x-4 mb-4">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getResourceColor(permission.resource)}`}>
+                        <TagIcon className="h-4 w-4 mr-1" />
+                        {permission.resource}
+                      </span>
+                      <span className="text-gray-300">→</span>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getActionColor(permission.action)}`}>
+                        {permission.action}
+                      </span>
+                    </div>
+                    {permission.description && (
+                      <p className="text-gray-600 max-w-md mx-auto">
+                        {permission.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Permission Details */}
+            <div className="bg-white shadow rounded-lg border border-gray-300">
+              <div className="px-4 py-3 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Chi tiết</h3>
+              </div>
+              <div className="px-4 py-4">
+                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Mã quyền hạn</dt>
+                    <dd className="mt-1 text-sm text-gray-900 font-mono bg-gray-50 px-2 py-1 rounded">
+                      {permission.name}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">ID</dt>
+                    <dd className="mt-1 text-sm text-gray-900 font-mono bg-gray-50 px-2 py-1 rounded">
+                      {permission.id}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Tài nguyên</dt>
+                    <dd className="mt-1">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getResourceColor(permission.resource)}`}>
+                        <TagIcon className="h-3 w-3 mr-1" />
+                        {permission.resource}
+                      </span>
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Hành động</dt>
+                    <dd className="mt-1">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionColor(permission.action)}`}>
+                        {permission.action}
+                      </span>
+                    </dd>
+                  </div>
+
+                  {/* <div>
+                    <dt className="text-sm font-medium text-gray-500">Ngày tạo</dt>
+                    <dd className="mt-1 text-sm text-gray-900 flex items-center">
+                      <CalendarIcon className="h-4 w-4 mr-1" />
+                      {formatDate(permission.createdAt)}
+                    </dd>
+                  </div> */}
+
+                  {/* <div>
+                    <dt className="text-sm font-medium text-gray-500">Cập nhật lần cuối</dt>
+                    <dd className="mt-1 text-sm text-gray-900 flex items-center">
+                      <CalendarIcon className="h-4 w-4 mr-1" />
+                      {formatDate(permission.updatedAt)}
+                    </dd>
+                  </div> */}
+                </dl>
+
+                {permission.description && (
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <dt className="text-sm font-medium text-gray-500 mb-2">Mô tả</dt>
+                    <dd className="text-sm text-gray-900 bg-gray-50 p-4 rounded-lg">
+                      {permission.description}
+                    </dd>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Info Banner */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex">
+                <KeyIcon className="h-5 w-5 text-blue-400 mt-0.5" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">
+                    Về quyền hạn này
+                  </h3>
+                  <p className="mt-1 text-sm text-blue-700">
+                    Quyền hạn được tự động tạo bởi hệ thống. Chỉ có thể chỉnh sửa mô tả.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Permission Pattern */}
+            <div className="bg-white shadow rounded-lg border border-gray-300">
+              <div className="px-4 py-3 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Mẫu quyền hạn</h3>
+              </div>
+              <div className="px-4 py-4">
+                <div className="space-y-4">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Định dạng</dt>
+                    <dd className="mt-1 text-sm font-mono bg-gray-100 p-2 rounded text-black">
+                      {permission.resource}.{permission.action}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Ví dụ sử dụng</dt>
+                    <dd className="mt-1 text-xs text-gray-600">
+                      Quyền hạn này cho phép thực hiện hành động "{permission.action}" trên tài nguyên "{permission.resource}"
+                    </dd>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Related Permissions */}
+            <div className="bg-white shadow rounded-lg border border-gray-300">
+              <div className="px-4 py-3 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Quyền hạn liên quan</h3>
+              </div>
+              <div className="px-4 py-4">
+                <div className="text-center py-4">
+                  <ShieldCheckIcon className="mx-auto h-8 w-8 text-gray-400" />
+                  <p className="mt-2 text-sm text-gray-500">
+                    Tính năng đang phát triển
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white shadow rounded-lg border border-gray-300">
+              <div className="px-4 py-3 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Thao tác nhanh</h3>
+              </div>
+              <div className="px-4 py-4 space-y-2">
+                <Link
+                  href={`/dashboard/permissions/${permission.id}/edit`}
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <PencilIcon className="h-4 w-4 mr-2" />
+                  Chỉnh sửa mô tả
+                </Link>
+
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(permission.name);
+                    toast.success('Đã copy tên quyền hạn');
+                  }}
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Copy tên quyền hạn
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

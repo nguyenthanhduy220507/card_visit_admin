@@ -7,7 +7,7 @@ class ApiService {
 
   constructor() {
     this.api = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://103.157.218.98:8393',
+      baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
       timeout: 30000,
     });
 
